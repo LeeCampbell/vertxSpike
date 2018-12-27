@@ -15,7 +15,7 @@ import io.vertx.ext.web.RoutingContext;
 
 import java.util.Optional;
 
-public class PlayerCommandVerticle extends AbstractVerticle {
+public class PlayerRestApiVerticle extends AbstractVerticle {
     private CommandHandlers commandHandlers;
     private QueryHandlers queryHandlers;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());

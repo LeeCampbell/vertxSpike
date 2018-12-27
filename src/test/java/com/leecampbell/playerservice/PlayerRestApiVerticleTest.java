@@ -25,7 +25,7 @@ import java.sql.SQLException;
 import java.util.Objects;
 
 @RunWith(VertxUnitRunner.class)
-public class PlayerCommandVerticleTest {
+public class PlayerRestApiVerticleTest {
 
     private Vertx vertx;
     private DatabaseHost databaseHost;
@@ -48,7 +48,7 @@ public class PlayerCommandVerticleTest {
         DeploymentOptions options = new DeploymentOptions()
                 .setConfig(config);
 
-        vertx.deployVerticle(PlayerCommandVerticle.class.getName(),
+        vertx.deployVerticle(PlayerRestApiVerticle.class.getName(),
                 options,
                 context.asyncAssertSuccess());
     }

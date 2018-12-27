@@ -25,7 +25,7 @@ public class App {
         VertxConfig.printConfig(vertx, logger);
 
         // Start server with config
-        vertx.deployVerticle(PlayerCommandVerticle.class.getName(),
+        vertx.deployVerticle(PlayerRestApiVerticle.class.getName(),
                 new DeploymentOptions().setInstances(VertxOptions.DEFAULT_EVENT_LOOP_POOL_SIZE).setConfig(config),
                 event -> {
                     if (event.succeeded()) {
