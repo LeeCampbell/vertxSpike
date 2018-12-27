@@ -10,14 +10,9 @@ To run
 ```
 mvn clean verify
 
-docker run --name vertxSpike-db -d --rm -p 5432:5432 -e POSTGRES_PASSWORD=mysecretpassword postgres:11.1-alpine
-
-# dont mount the vol, requires abs path. -LC
-# copy the file there instead.
-docker run --rm -v c:/users/leery/source/repos/vertxSpike/src/test/resources/db:/flyway/sql boxfuse/flyway:5.1.4-alpine -url=jdbc:postgresql://localhost:5432/player_service -user=postgres -password=mysecretpassword migrate
-
+docker build -f ./docker/postgresdb.dockerfile -t vertxspike-db .
+docker run --name vertxSpike-db -d --rm -p 5432:5432 -e POSTGRES_PASSWORD=mysecretpassword vertxspike-db
 java -jar target/player-service-1.0-SNAPSHOT-fat.jar -c ./src/main/conf/config.json
-
 ```
 Then the web server will be listening on `http://localhost:8080`.
 
