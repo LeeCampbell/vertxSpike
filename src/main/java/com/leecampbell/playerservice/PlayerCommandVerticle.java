@@ -1,9 +1,6 @@
 package com.leecampbell.playerservice;
 
-import com.leecampbell.playerservice.Model.DomainInvarianceException;
-import com.leecampbell.playerservice.Model.Player;
-import com.leecampbell.playerservice.Model.PlayerRepository;
-import com.leecampbell.playerservice.Model.RegisterPlayerCommand;
+import com.leecampbell.playerservice.Model.*;
 import io.reactiverse.pgclient.PgClient;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
@@ -16,19 +13,24 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
+import java.util.Optional;
+
 public class PlayerCommandVerticle extends AbstractVerticle {
-    private PlayerRepository repo;
+    private CommandHandlers commandHandlers;
+    private QueryHandlers queryHandlers;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
     public void start(Future<Void> fut) {
         PgClient pgClient = VertxPgClientFactory.create(vertx, config());
-        repo = new PostgresPlayerRepository(pgClient);
+        queryHandlers = new QueryHandlers(pgClient);
+        commandHandlers = new CommandHandlers(new PostgresPlayerRepository(pgClient));
+
         Router router = Router.router(vertx);
+        router.get("/players/:playerId").handler(this::handleGetPlayer);
         router.post("/players/:playerId").handler(this::handleAddPlayer);
         router.delete("/players/:playerId").handler(this::handleDeletePlayer);
         vertx.createHttpServer()
-
                 .requestHandler(router)
                 .listen(8080, result -> {
                     if (result.succeeded()) {
@@ -37,6 +39,31 @@ public class PlayerCommandVerticle extends AbstractVerticle {
                         fut.fail(result.cause());
                     }
                 });
+    }
+
+    private void handleGetPlayer(RoutingContext routingContext) {
+        logger.info("handleGetPlayer");
+        String playerId = routingContext.request().getParam("playerId");
+        logger.debug(playerId);
+        HttpServerResponse response = routingContext.response();
+        if(playerId==null){
+            sendError(400, response);
+        }else {
+            Integer id = Integer.parseInt(playerId);
+            Future<Optional<PlayerState>> getPlayer = queryHandlers.getPlayer(id);
+            getPlayer.setHandler(ar->{
+                if(ar.failed()){
+                    logger.warn(ar.cause());
+                    sendError(500, response);
+                }else if(!ar.result().isPresent()){
+                    sendError(404, response);
+                }else {
+                    JsonObject json = JsonObject.mapFrom(ar.result().get());
+                    response.setStatusCode(200)
+                            .end(json.toBuffer());
+                }
+            });
+        }
     }
 
     private void handleAddPlayer(RoutingContext routingContext) {
@@ -56,12 +83,8 @@ public class PlayerCommandVerticle extends AbstractVerticle {
                 getCommand.complete(registerCommand);
             });
 
-            Future<Player> getPlayer = getCommand.compose(registerPlayerCommand -> repo.get(registerPlayerCommand.getPlayerId()));
-            Future<Void> savePlayer = getPlayer.compose(player -> {
-                player.register(getCommand.result());
-                return repo.save(player);
-            });
-            savePlayer.setHandler(ar -> {
+            Future<Void> registerPlayer = getCommand.compose(registerPlayerCommand -> commandHandlers.handle(registerPlayerCommand));
+            registerPlayer.setHandler(ar -> {
                 if (!handleFailure(ar, response)) {
                     response.setStatusCode(201).end();
                 }
