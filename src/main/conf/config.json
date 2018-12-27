@@ -1,8 +1,7 @@
 {
-    "host": "tfb-database",
-    "username": "benchmarkdbuser",
-    "password": "benchmarkdbpass",
-    "database": "hello_world",
-    "maxPoolSize": 64,
-    "conn" : "localConfig:667LC"
+    "host": "localhost",
+    "username": "postgres",
+    "password": "mysecretpassword",
+    "database": "postgres",
+    "maxPoolSize": 64
   }
